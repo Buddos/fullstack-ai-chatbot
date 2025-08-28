@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Chatbot</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+    #chatbox { width: 100%; max-width: 600px; margin: auto; background: white; border-radius: 8px; padding: 15px; box-shadow: 0 0 10px rgba(0,0,0,0.1);}
+    #messages { height: 400px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
+    .msg { margin: 5px 0; padding: 8px; border-radius: 6px; }
+    .user { background: #d1e7dd; text-align: right; }
+    .bot { background: #f8d7da; text-align: left; }
+    #inputArea { display: flex; }
+    #messageInput { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+    button { margin-left: 5px; padding: 10px; }
+  </style>
+</head>
+<body>
+  <div id="chatbox">
+    <h2>🤖 AI Chatbot</h2>
+    <div id="messages"></div>
+    <div id="inputArea">
+      <input id="messageInput" type="text" placeholder="Type a message..."/>
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script>
+    let ws;
+    let token;
+
+    // Step 1: Fetch a token from FastAPI
+    async function initChat() {
+      const res = await fetch("http://localhost:8000/token");
+      const data = await res.json();
+      token = data.token;
+
+      // Step 2: Connect to WebSocket with token
+      ws = new WebSocket(`ws://localhost:8000/chat?token=${token}`);
+
+      ws.onopen = () => {
+        console.log("✅ Connected to server");
+      };
+
+      ws.onmessage = (event) => {
+        addMessage(event.data, "bot");
+      };
+
+      ws.onclose = () => {
+        console.log("❌ Disconnected from server");
+      };
+    }
+
+    // Step 3: Send message
+    function sendMessage() {
+      const input = document.getElementById("messageInput");
+      const message = input.value;
+      if (message && ws) {
+        ws.send(message);
+        addMessage(message, "user");
+        input.value = "";
+      }
+    }
+
+    // Step 4: Display message
+    function addMessage(text, type) {
+      const messages = document.getElementById("messages");
+      const div = document.createElement("div");
+      div.className = `msg ${type}`;
+      div.innerText = text;
+      messages.appendChild(div);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    // Initialize
+    initChat();
+  </script>
+</body>
+</html>
